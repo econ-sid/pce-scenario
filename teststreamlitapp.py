@@ -145,10 +145,16 @@ def create_component_chart(df_yoy, yoy_path):
     fig.add_hline(y=2.0, line=dict(color='rgba(0,0,0,0.3)', width=1, dash='dash'), annotation_text='2% Target')
     fig.add_vrect(x0=yoy_path.index[0], x1=yoy_path.index[-1], fillcolor=colors['forecast_bg'], layer='below', line_width=0)
     
-    fig.update_layout(title='<b>Component Contributions: Last 2 Years + Forecast</b>', height=400,
-                      font=dict(family='Georgia, serif', size=12, color='#1a1a1a'), paper_bgcolor='#fafafa', plot_bgcolor='#fafafa',
-                      margin=dict(l=60, r=40, t=60, b=60), legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='center', x=0.5),
-                      hovermode='x unified', yaxis_title='YoY % / Contribution (pp)')
+    fig.update_layout(
+        title=dict(text='<b>Component Contributions: Last 2 Years + Forecast</b>', y=0.95),
+        height=450,
+        paper_bgcolor='#fafafa', 
+        plot_bgcolor='#fafafa',
+        margin=dict(l=60, r=40, t=80, b=60),
+        legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5),
+        hovermode='x unified',
+        yaxis_title='YoY % / Contribution (pp)'
+    )
     fig.update_xaxes(showgrid=False, showline=True, linecolor='rgba(0,0,0,0.2)', dtick='M3', tickformat='%b\n%Y')
     fig.update_yaxes(showgrid=True, gridcolor=colors['grid'], ticksuffix='%', zeroline=True, zerolinecolor='rgba(0,0,0,0.15)')
     return fig
