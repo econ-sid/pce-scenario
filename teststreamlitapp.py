@@ -189,7 +189,7 @@ implied_annual = forecast['annualized'].iloc[0]
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Current Core PCE YoY", f"{current_yoy:.2f}%")
-col2.metric("12-Month Forecast YoY", f"{final_yoy:.2f}%", f"{final_yoy - current_yoy:.2f}pp")
+col2.metric("12-Month Forecast YoY", f"{final_yoy:.2f}%", f"{final_yoy - current_yoy:.2f}pp", delta_color="inverse")
 col3.metric("Implied Monthly Pace", f"{implied_monthly:.3f}%")
 col4.metric("Annualized Rate", f"{implied_annual:.2f}%")
 
