@@ -159,16 +159,84 @@ def create_component_chart(df_yoy, yoy_path):
     fig.update_yaxes(showgrid=True, gridcolor=colors['grid'], ticksuffix='%', zeroline=True, zerolinecolor='rgba(0,0,0,0.15)')
     return fig
 
+def create_mom_chart(df_mom, forecast):
+    colors = {'housing': '#2E86AB', 'non_housing': '#A23B72', 'goods': '#F18F01', 'total': '#1B1B1E', 'forecast_bg': 'rgba(200,200,200,0.15)', 'grid': 'rgba(0,0,0,0.06)'}
+    fig = go.Figure()
+    
+    cutoff_date = df_mom.index[-1] - pd.DateOffset(years=2)
+    hist_housing = df_mom['housing'].loc[df_mom.index >= cutoff_date].dropna()
+    hist_non_housing = df_mom['non_housing_services'].loc[df_mom.index >= cutoff_date].dropna()
+    hist_goods = df_mom['core_goods'].loc[df_mom.index >= cutoff_date].dropna()
+    hist_total = df_mom['core_pce'].loc[df_mom.index >= cutoff_date].dropna()
+    common_idx = hist_housing.index.intersection(hist_non_housing.index).intersection(hist_goods.index).intersection(hist_total.index)
+    
+    hist_goods_contrib = hist_goods.loc[common_idx] * WEIGHTS['core_goods']
+    hist_nh_contrib = hist_non_housing.loc[common_idx] * WEIGHTS['non_housing_services']
+    hist_housing_contrib = hist_housing.loc[common_idx] * WEIGHTS['housing']
+    
+    # Historical stacked bars
+    fig.add_trace(go.Bar(x=common_idx, y=hist_goods_contrib, name='Core Goods', marker_color='rgba(241, 143, 1, 0.8)'))
+    fig.add_trace(go.Bar(x=common_idx, y=hist_nh_contrib, name='Non-Housing Services', marker_color='rgba(162, 59, 114, 0.8)'))
+    fig.add_trace(go.Bar(x=common_idx, y=hist_housing_contrib, name='Housing Services', marker_color='rgba(46, 134, 171, 0.8)'))
+    
+    # Forecast stacked bars
+    fig.add_trace(go.Bar(x=forecast.index, y=forecast['goods_contrib'], marker_color='rgba(241, 143, 1, 0.4)', showlegend=False))
+    fig.add_trace(go.Bar(x=forecast.index, y=forecast['non_housing_contrib'], marker_color='rgba(162, 59, 114, 0.4)', showlegend=False))
+    fig.add_trace(go.Bar(x=forecast.index, y=forecast['housing_contrib'], marker_color='rgba(46, 134, 171, 0.4)', showlegend=False))
+    
+    # Core PCE MoM line
+    fig.add_trace(go.Scatter(x=hist_total.index, y=hist_total.values, mode='lines', name='Core PCE MoM', line=dict(color=colors['total'], width=2.5), fill=None))
+    fig.add_trace(go.Scatter(x=forecast.index, y=forecast['total_mom'], mode='lines+markers', line=dict(color=colors['total'], width=2.5, dash='dot'), marker=dict(size=5), showlegend=False, fill=None))
+    
+    fig.add_hline(y=0.17, line=dict(color='rgba(0,0,0,0.3)', width=1, dash='dash'), annotation_text='~2% annualized')
+    fig.add_vrect(x0=forecast.index[0], x1=forecast.index[-1], fillcolor=colors['forecast_bg'], layer='below', line_width=0)
+    
+    fig.update_layout(
+        title=dict(text='<b>Month-over-Month Component Contributions</b>', y=0.95),
+        height=450,
+        barmode='relative',
+        paper_bgcolor='#fafafa', 
+        plot_bgcolor='#fafafa',
+        margin=dict(l=60, r=40, t=80, b=60),
+        legend=dict(orientation='h', yanchor='top', y=-0.15, xanchor='center', x=0.5),
+        hovermode='x unified',
+        yaxis_title='MoM % / Contribution (pp)'
+    )
+    fig.update_xaxes(showgrid=False, showline=True, linecolor='rgba(0,0,0,0.2)', dtick='M3', tickformat='%b\n%Y')
+    fig.update_yaxes(showgrid=True, gridcolor=colors['grid'], ticksuffix='%', zeroline=True, zerolinecolor='rgba(0,0,0,0.15)')
+    return fig
+
 # --- MAIN APP ---
 st.title("Core PCE Inflation Decomposition")
-st.markdown("Adjust the monthly pace assumptions for each pillar to generate a 12-month forecast.")
+st.markdown("""
+We believe the future is unknowable, however we can make ourselves more informed by determining possible paths. 
+            
+Since inflation is a key to the path for interest rates, we have built this tool where you can adjust the monthly pace
+of each key pillar of core inflation: housing, non-housing services, and goods.
+
+**How it works:**  
+The tool decomposes Core PCE inflation into three components: Housing Services, 
+Non-Housing Services, and Core Goods. On the sidebar on the left, set your assumed monthly pace for each pillar, 
+and the model projects the year-over-year path forward.
+
+**Data sources:**  
+- Federal Reserve Economic Data (FRED)
+- We utilized Core PCE Price Index, the Core Services ex-Housing and Services ex-Housing sub-components 
+            to calculate the core goods contribution and assumed static weights in the months ahead.
+
+---
+""")
 st.markdown("---")
 
 df, df_mom, df_yoy = fetch_pce_data()
 
 # Sidebar
 st.sidebar.header("Monthly Pace Assumptions (% MoM)")
-st.sidebar.caption("Pre-pandemic average ~0.15% MoM")
+st.sidebar.caption("""\
+Pre-pandemic (2014-19) average:
+Housing Services: 0.27%   
+Non-Housing Services: 0.17%   
+Core Goods: -0.06%""")
 housing_pace = st.sidebar.slider("🏠 Housing", -0.2, 0.8, 0.30, 0.02, format="%.2f")
 non_housing_pace = st.sidebar.slider("💼 Non-Housing Services", -0.2, 0.6, 0.25, 0.02, format="%.2f")
 goods_pace = st.sidebar.slider("📦 Core Goods", -0.4, 0.4, 0.00, 0.02, format="%.2f")
@@ -196,4 +264,5 @@ col4.metric("Annualized Rate", f"{implied_annual:.2f}%")
 st.markdown("---")
 
 # Charts
+st.plotly_chart(create_mom_chart(df_mom, forecast), use_container_width=True)
 st.plotly_chart(create_component_chart(df_yoy, yoy_path), use_container_width=True)
