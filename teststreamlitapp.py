@@ -211,8 +211,7 @@ st.title("Core PCE Inflation Decomposition")
 st.markdown("""
 We believe the future is unknowable, however we can make ourselves more informed by determining possible paths. 
             
-Since inflation is a key to the path for interest rates, we have built this tool where you can adjust the monthly pace
-of each key pillar of core inflation: housing, non-housing services, and goods.
+Since inflation is a key to the path for interest rates, we have built this tool where you can build your own forecast for Core PCE inflation. 
 
 **How it works:**  
 The tool decomposes Core PCE inflation into three components: Housing Services, 
@@ -226,7 +225,6 @@ and the model projects the year-over-year path forward.
 
 ---
 """)
-st.markdown("---")
 
 df, df_mom, df_yoy = fetch_pce_data()
 
